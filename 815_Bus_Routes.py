@@ -1,101 +1,82 @@
 
+from collections import defaultdict, deque
+
+
 INF = 999999999
 
-from collections import defaultdict
 
-class Solution:
+class Solution:    
 
-  def __init__(self) -> None:
-    self.routes : list[list[int]]
-    self.source : int
-    self.target : int
+  # def num_buses_to_destination ( self, routes: list[list[int]], source: int, target: int ) -> int:
     
-    self.adyacent : defaultdict(set)
-    self.vertices : dict[int,int]
-    self.num_of_vertices : int
-    
-
-  def print_adyacency ( self ) -> None:
-    print('-- Adyacency Matrix --')
-    print('Node --- Adyacents')
-    for vertex, adyacents in self.adyacent.items():
-      print(f'{vertex}: {adyacents}')
-    print('-- ### <--  --> ### --')
+  #   if source == target:
+  #     return 0
   
+  #   max_stop = max(max(route) for route in routes)
+  #   if max_stop < target:
+  #       return -1
 
-  def generate_stops ( self ) -> None:
-    self.num_of_vertices = 0
-    for route in self.routes:
-      for stop in route:
-        if self.vertices.get(stop) is None:
-          self.adyacent[stop] = set()
-          self.vertices[stop] = self.num_of_vertices
-          self.num_of_vertices += 1
+  #   min_buses_to_reach = [INF] * (max_stop + 1)
+  #   min_buses_to_reach[source] = 0
 
+  #   for route in routes:
+  #     mini = INF
+  #     for stop in route:
+  #       mini = min(mini, min_buses_to_reach[stop])
+  #     mini += 1
+  #     for stop in route:
+  #       if min_buses_to_reach[stop] > mini:
+  #         min_buses_to_reach[stop] = mini
 
-  def generate_adyacency_matrix ( self ) -> bool:
-    for route in self.routes:
-      for stop in route:
-        self.adyacent[stop].update(set(route))
-        self.adyacent[stop].discard(stop)
-    
-    
-  def dijkstra ( self, source: int ) -> list[int]:
-
-    def min_distance ( distance: list[int], visited: list[bool] ) -> int:
-      minimum = INF
-      min_node = -1
-      
-      for node in self.vertices.keys():
-        v = self.vertices[node]
-        if distance[v] < minimum and not visited[v]:
-          minimum = distance[v]
-          min_node = node
-      
-      return min_node
-
-    distance = [INF] * self.num_of_vertices
-    distance[ self.vertices[source] ] = 0
-    visited = [False] * self.num_of_vertices
-    
-    for _ in range(self.num_of_vertices):
-      node1 = min_distance ( distance, visited )
-      
-      if node1 == -1:
-        break
-      
-      visited[self.vertices[node1]] = True
-      
-      for node2 in self.vertices.keys():
-        if node1 != node2 \
-          and not visited[self.vertices[node2]] \
-          and distance[self.vertices[node2]] > distance[self.vertices[node1]] + (1 if node2 in self.adyacent[node1] else INF):
-            distance[self.vertices[node2]] = distance[self.vertices[node1]] + (1 if node2 in self.adyacent[node1] else INF)
-    
-    return distance
-    
-
+  #   return min_buses_to_reach[target] if min_buses_to_reach[target] < INF else -1
+  
+  
   def num_buses_to_destination ( self, routes: list[list[int]], source: int, target: int ) -> int:
     
     if source == target:
       return 0
     
-    self.adyacent = {}
-    self.vertices = {}
+    # make the graph
+    stop_to_bus = defaultdict(list)
+    for bus_id, route in enumerate(routes):
+      for stop in route:
+        stop_to_bus[stop].append(bus_id)
     
-    self.routes = routes
-    self.source = source
-    self.target = target
+    if source not in stop_to_bus or target not in stop_to_bus:
+      return -1
     
-    self.generate_stops()
-    self.generate_adyacency_matrix()
+    queue = deque([source])
+    buses_taken   = set()
+    stops_visited = set()
+    stops_visited.add(source)
+    steps = 0
     
-    # self.print_adyacency()
-    
-    distance = self.dijkstra( source )
-    ans = distance[ self.vertices[target] ]
-    return ans if ans != INF else -1
-
+    while queue:
+      steps += 1
+      stops_to_process = len( queue )
+      
+      for _ in range(stops_to_process):
+        current_stop = queue.popleft()
+        
+        for bus_id in stop_to_bus[current_stop]:
+          if bus_id in buses_taken:
+            continue
+          
+          buses_taken.add(bus_id)
+          
+          for next_stop in routes[bus_id]:
+            if next_stop in stops_visited:
+              continue
+            
+            stops_visited.add(next_stop)
+            
+            if target == next_stop:
+              return steps
+            
+            queue.append(next_stop)
+            
+    return -1
+  
 
 if __name__ == '__main__':
   
